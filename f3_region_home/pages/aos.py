@@ -9,16 +9,61 @@ from ..database.queries import EventExtended, OrgSeries
 from ..layouts import default_layout
 
 
-def event_card(event_extended: EventExtended):
-    label = f"{event_extended.day_of_week} {event_extended.event_type.name} @ {event_extended.start_time}"
-    return item_card(
-        state=State,
-        item=event_extended.event,
-        item_title=event_extended.event.name,
-        item_name="event",
-        label_component=rx.heading(label),
-        form=series_form(),
-        thing_label="Series",
+def aos() -> rx.Component:
+    return default_layout(
+        rx.flex(
+            rx.foreach(
+                State.region_data.org_series,
+                lambda org_series: ao_section(org_series),
+            ),
+            rx.cond(
+                State.region_selected,
+                add_ao_dialog(),
+                rx.text("Select a region to view AOs."),
+            ),
+            direction="column",
+            spacing="3",
+            align="center",
+        ),
+        "aos",
+    )
+
+
+def add_ao_dialog() -> rx.Component:
+    return rx.dialog.root(
+        rx.dialog.trigger(add_ao_card()),
+        rx.dialog.content(
+            rx.dialog.title("Add AO"),
+            ao_form(),
+        ),
+        open=State.add_ao_dialog_open,
+    )
+
+
+def add_ao_card() -> rx.Component:
+    return rx.button(
+        rx.flex(
+            rx.icon("plus"),
+            rx.heading("Add AO"),
+            direction="row",
+            spacing="3",
+        ),
+        on_click=State.set_add_ao_dialog_open(True),
+    )
+
+
+def ao_section(org_series: OrgSeries) -> rx.Component:
+    return rx.flex(
+        ao_card(org_series.org),
+        rx.foreach(
+            org_series.series,
+            lambda series: event_card(series),
+        ),
+        add_series_dialog(),
+        rx.divider(),
+        align="center",
+        direction="column",
+        spacing="3",
     )
 
 
@@ -39,30 +84,16 @@ def ao_card(org: Org) -> rx.Component:
     )
 
 
-def ao_section(org_series: OrgSeries) -> rx.Component:
-    return rx.flex(
-        ao_card(org_series.org),
-        rx.foreach(
-            org_series.series,
-            lambda series: event_card(series),
-        ),
-        add_series_dialog(),
-        rx.divider(),
-        align="center",
-        direction="column",
-        spacing="3",
-    )
-
-
-def add_series_card() -> rx.Component:
-    return rx.button(
-        rx.flex(
-            rx.icon("plus"),
-            rx.heading("Add Series"),
-            direction="row",
-            spacing="3",
-        ),
-        on_click=State.set_add_series_dialog_open(True),
+def event_card(event_extended: EventExtended):
+    label = f"{event_extended.day_of_week} {event_extended.event_type.name} @ {event_extended.start_time}"
+    return item_card(
+        state=State,
+        item=event_extended.event,
+        item_title=event_extended.event.name,
+        item_name="event",
+        label_component=rx.heading(label),
+        form=series_form(),
+        thing_label="Series",
     )
 
 
@@ -77,17 +108,15 @@ def add_series_dialog() -> rx.Component:
     )
 
 
-def aos() -> rx.Component:
-    return default_layout(
+def add_series_card() -> rx.Component:
+    return rx.button(
         rx.flex(
-            rx.foreach(
-                State.region_data.org_series,
-                lambda org_series: ao_section(org_series),
-            ),
-            direction="column",
+            rx.icon("plus"),
+            rx.heading("Add Series"),
+            direction="row",
             spacing="3",
         ),
-        "aos",
+        on_click=State.set_add_series_dialog_open(True),
     )
 
 
@@ -210,4 +239,68 @@ def series_form() -> rx.Component:
             direction="column",
             spacing="3",
         ),
+    )
+
+
+def ao_form() -> rx.Component:
+    return rx.form(
+        rx.flex(
+            rx.text("AO Name", weight="bold", align="left"),
+            rx.input(
+                placeholder="AO Name",
+                name="name",
+                required=True,
+            ),
+            rx.text("Description", weight="bold", align="left"),
+            rx.text_area(
+                placeholder="Description",
+                name="description",
+                required=False,
+            ),
+            rx.text("Default Location", weight="bold", align="left"),
+            rx.select.root(
+                rx.select.trigger(),
+                rx.select.content(
+                    rx.foreach(
+                        State.region_data.locations,
+                        lambda location: rx.select.item(location.name, value=str(location.id)),
+                    ),
+                ),
+                required=False,
+                name="default_location_id",
+            ),
+            # rx.text("Default Event Type", weight="bold", align="left"),
+            # rx.select.root(
+            #     rx.select.trigger(),
+            #     rx.select.content(
+            #         rx.foreach(
+            #             State.region_data.event_types,
+            #             lambda event_type: rx.select.item(event_type.name, value=str(event_type.id)),
+            #         ),
+            #     ),
+            #     required=False,
+            #     name="event_type_id",
+            # ),
+            # rx.text("AO Logo", weight="bold", align="left"),
+            # rx.upload(),
+            rx.flex(
+                rx.dialog.close(
+                    rx.button("Save", type="submit", on_click=State.set_add_ao_dialog_open(False)),
+                ),
+                rx.dialog.close(
+                    rx.button(
+                        "Cancel",
+                        variant="soft",
+                        color_scheme="gray",
+                        on_click=State.set_add_ao_dialog_open(False),
+                    ),
+                ),
+                direction="row",
+                spacing="3",
+                justify="end",
+            ),
+            direction="column",
+            spacing="3",
+        ),
+        on_submit=State.handle_submit_add_ao,
     )

@@ -12,10 +12,12 @@ git clone https://github.com/F3-Nation/f3-nation-data-management.git
 ```sh
 poetry install
 ```
-3. Modify `rxconfig.py` to point to a local db. I pass in environment variables through a `.env` file (see `.env.example`)
-4. TODO: add steps for initializing database (should just be some alembic commands)
-5. Run using 
+3. Run the alembic migration to initialize a local sqlite db (or update to the latest version):
 ```sh
-source .env && poetry run reflex run
+reflex db migrate
 ```
-6. Your running app should be available at http://localhost:3000
+4. Run using 
+```sh
+poetry run reflex run
+```
+5. Your running app should be available at http://localhost:3000/home

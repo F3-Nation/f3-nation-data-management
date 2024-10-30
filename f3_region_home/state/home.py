@@ -28,6 +28,7 @@ class State(rx.State):
     active_org_id: int
     add_series_dialog_open: bool = False
     active_series: Event = None
+    add_ao_dialog_open: bool = False
 
     def switch_region(self, region_name: str):
         self.region_name = region_name
@@ -98,3 +99,23 @@ class State(rx.State):
         self.active_org_id = org.id
         # self.active_series = series
         self.add_series_dialog_open = True
+
+    def handle_add_ao(self):
+        # self.active_org_id = org.id
+        # self.active_series = series
+        self.add_ao_dialog_open = True
+
+    def handle_submit_add_ao(self, form_data: dict):
+        for key, value in form_data.items():
+            if value == "":
+                form_data[key] = None
+        if form_data.get("location_id"):
+            form_data["default_location_id"] = int(form_data["default_location_id"])
+        Org.add_ao(self.region_id, form_data)
+        self.region_data = RegionData(self.region_id)
+        self.add_location_dialog_open = False
+        yield
+
+    @rx.var
+    def region_selected(self):
+        return self.region_id is not None

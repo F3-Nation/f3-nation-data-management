@@ -11,7 +11,8 @@ from sqlalchemy import (
     null,
     select,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+
+# from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declared_attr
 from sqlmodel import Field
 
@@ -158,7 +159,7 @@ class Location(TimestampMixin, GetDBClass, rx.Model, table=True):
     address_city: Optional[str] = None
     address_state: Optional[str] = None
     address_zip: Optional[str] = None
-    meta: Optional[dict[str, Any]] = Field(default_factory=null, sa_column=Column(JSONB, nullable=True))
+    meta: Optional[dict[str, Any]] = Field(default_factory=null, sa_column=Column(JSON, nullable=True))
 
     def get_all(region_id: int):
         with rx.session() as session:
@@ -263,6 +264,13 @@ class Org(TimestampMixin, GetDBClass, rx.Model, table=True):
             query = select(Event).where(Event.org_id == region_id, Event.is_series, Event.is_active)
             series = session.exec(query).all()
         return {s.id: s for s in series}
+
+    def add_ao(region_id: int, fields: dict[str, Any]):
+        with rx.session() as session:
+            org = Org(parent_id=region_id, **fields, is_active=True, org_type_id=1)
+            session.add(org)
+            session.commit()
+        return org
 
 
 class OrgType(TimestampMixin, GetDBClass, rx.Model, table=True):
