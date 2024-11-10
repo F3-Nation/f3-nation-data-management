@@ -197,6 +197,7 @@ def create_search_input():
         border_radius="0.5rem",
         box_shadow="0 1px 2px 0 rgba(0, 0, 0, 0.05)",
         width="100%",
+        on_change=rx.set_value("existing-user-search"),
     )
 
 
