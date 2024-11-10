@@ -3,15 +3,16 @@
 import reflex as rx
 from sqlmodel import select
 
-from .base import State, User
+from .base import BaseState, User
 
 
-class AuthState(State):
+class AuthState(BaseState):
     """The authentication state for sign up and login page."""
 
     email: str
     password: str
     confirm_password: str
+    login_dialog_open: bool = False
 
     def signup(self):
         """Sign up a user."""
@@ -32,6 +33,13 @@ class AuthState(State):
             user = session.exec(select(User).where(User.email == self.email)).first()
             if user and user.password == self.password:
                 self.user = user
-                return rx.redirect("/")
+                # return rx.redirect("/")
+                return rx.toast.success("Logged in successfully!")
             else:
                 return rx.window_alert("Invalid email or password.")
+
+    def show_tooltip(self):
+        """Show a tooltip."""
+        print("showing tooltip")
+        yield rx.tooltip("hey there", open=True)
+        return

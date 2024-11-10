@@ -195,6 +195,7 @@ class User(TimestampMixin, GetDBClass, rx.Model, table=True):
     email: str = Field(unique=True)
     home_region_id: int | None = Field(default=None, foreign_key="orgs.id")
     avatar_url: str | None = None
+    password: str | None = None
     meta: dict[str, Any] | None = Field(default=None, sa_column=Column(JSON))
 
 
@@ -253,11 +254,11 @@ class Org(TimestampMixin, GetDBClass, rx.Model, table=True):
     last_annual_review: date | None = None
     meta: dict[str, Any] | None = Field(default=None, sa_column=Column(JSON))
 
-    def get_all_regions() -> dict[str, int]:
+    def get_all_regions() -> list[tuple[str, str]]:
         with rx.session() as session:
             query = select(Org.name, Org.id).where(Org.org_type_id == 2, Org.is_active)
             regions = session.exec(query).all()
-        return {r.name: r.id for r in regions}
+        return [(r.name, str(r.id)) for r in regions]
 
     def get_series(region_id: int) -> dict[int, list[Event]]:
         with rx.session() as session:
@@ -269,6 +270,20 @@ class Org(TimestampMixin, GetDBClass, rx.Model, table=True):
         with rx.session() as session:
             org = Org(parent_id=region_id, **fields, is_active=True, org_type_id=1)
             session.add(org)
+            session.commit()
+        return org
+
+    def update(org_id: int, fields: dict[str, Any]):
+        with rx.session() as session:
+            org = session.get(Org, org_id)
+            org._update(fields)
+            session.commit()
+        return org
+
+    def deactivate(org_id: int):
+        with rx.session() as session:
+            org = session.get(Org, org_id)
+            org.is_active = False
             session.commit()
         return org
 

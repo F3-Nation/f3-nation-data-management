@@ -14,15 +14,19 @@ def item_card(
     label_component: rx.Component,
     form: rx.Component,
     thing_label: str,
+    admin: bool = False,
 ) -> rx.Component:
     return rx.card(
         rx.flex(
             label_component,
-            rx.flex(
-                edit_item_dialog(state, item, item_name, form, thing_label),
-                delete_item_dialog(state, item, item_title, item_name, thing_label),
-                direction="row",
-                spacing="3",
+            rx.cond(
+                admin,
+                rx.flex(
+                    edit_item_dialog(state, item, item_name, form, thing_label),
+                    delete_item_dialog(state, item, item_title, item_name, thing_label),
+                    direction="row",
+                    spacing="3",
+                ),
             ),
             justify="between",
             direction="row",
@@ -57,7 +61,7 @@ def delete_item_dialog(
             ),
             style={"max_width": 450},
         ),
-        on_open_change=getattr(state, f"set_active_{item_name}_id")(item.id),
+        on_open_change=getattr(state, f"set_active_{item_name}")(item),
     )
 
 
@@ -70,5 +74,5 @@ def edit_item_dialog(
             rx.dialog.title(f"Edit {thing_label}"),
             form,
         ),
-        on_open_change=getattr(state, f"set_active_{item_name}_id")(item.id),
+        on_open_change=getattr(state, f"set_active_{item_name}")(item),
     )

@@ -1,8 +1,9 @@
 import reflex as rx
 import reflex_map as rx_map
+
+from ..database.queries import LocationExtended
 from ..layouts import default_layout
-from ..state.home import State
-from ..database.models import Location
+from ..state.locations import LocationState
 
 
 def locations() -> rx.Component:
@@ -13,7 +14,7 @@ def locations() -> rx.Component:
             default_marker_map(),
             rx.flex(
                 rx.foreach(
-                    State.region_data.locations,
+                    LocationState.region_data.locations,
                     lambda location: location_card(location),
                 ),
                 spacing="2",
@@ -27,15 +28,18 @@ def locations() -> rx.Component:
     )
 
 
-def location_card(location: Location) -> rx.Component:
+def location_card(location: LocationExtended) -> rx.Component:
     return rx.card(
         rx.flex(
             rx.heading(location.name),
-            rx.flex(
-                edit_location_dialog(location),
-                delete_location_dialog(location),
-                direction="row",
-                spacing="3",
+            rx.cond(
+                LocationState.user_is_admin,
+                rx.flex(
+                    edit_location_dialog(location),
+                    delete_location_dialog(location),
+                    direction="row",
+                    spacing="3",
+                ),
             ),
             justify="between",
             direction="row",
@@ -44,14 +48,12 @@ def location_card(location: Location) -> rx.Component:
     )
 
 
-def delete_location_dialog(location: Location) -> rx.Component:
+def delete_location_dialog(location: LocationExtended) -> rx.Component:
     return rx.alert_dialog.root(
         rx.alert_dialog.trigger(rx.icon("trash-2")),
         rx.alert_dialog.content(
             rx.alert_dialog.title("Delete Location"),
-            rx.alert_dialog.description(
-                f"Are you sure you want to delete {location.name}?"
-            ),
+            rx.alert_dialog.description(f"Are you sure you want to delete {location.name}?"),
             rx.flex(
                 rx.alert_dialog.cancel(
                     rx.button("Cancel", variant="soft", color_scheme="gray"),
@@ -61,7 +63,7 @@ def delete_location_dialog(location: Location) -> rx.Component:
                         "Delete",
                         variant="solid",
                         color_scheme="red",
-                        on_click=State.handle_delete_location,
+                        on_click=LocationState.handle_delete_location,
                     ),
                 ),
                 spacing="3",
@@ -70,11 +72,11 @@ def delete_location_dialog(location: Location) -> rx.Component:
             ),
             style={"max_width": 450},
         ),
-        on_open_change=State.set_active_location_id(location.id),
+        on_open_change=LocationState.set_active_location_id(location.id),
     )
 
 
-def edit_location_dialog(location: Location) -> rx.Component:
+def edit_location_dialog(location: LocationExtended) -> rx.Component:
     return rx.dialog.root(
         rx.dialog.trigger(rx.icon("pencil")),
         rx.dialog.content(
@@ -85,45 +87,45 @@ def edit_location_dialog(location: Location) -> rx.Component:
                         rx.input(
                             placeholder="Location Name",
                             name="name",
-                            value=location.name,
+                            default_value=location.name,
                             required=True,
                         ),
                         rx.input(
                             placeholder="Description",
                             name="description",
-                            value=location.description,
+                            default_value=location.description,
                         ),
                         rx.input(
                             placeholder="Latitude",
                             name="lat",
-                            value=location.lat,
+                            default_value=location.lat_str,
                             type="text",
                         ),
                         rx.input(
                             placeholder="Longitude",
                             name="lon",
-                            value=location.lon,
+                            default_value=location.lon_str,
                             type="text",
                         ),
                         rx.input(
                             placeholder="Address",
                             name="address_street",
-                            value=location.address_street,
+                            default_value=location.address_street,
                         ),
                         rx.input(
                             placeholder="City",
                             name="address_city",
-                            value=location.address_city,
+                            default_value=location.address_city,
                         ),
                         rx.input(
                             placeholder="State",
                             name="address_state",
-                            value=location.address_state,
+                            default_value=location.address_state,
                         ),
                         rx.input(
                             placeholder="Zip",
                             name="address_zip",
-                            value=location.address_zip,
+                            default_value=location.address_zip,
                         ),
                         direction="column",
                         spacing="3",
@@ -136,10 +138,10 @@ def edit_location_dialog(location: Location) -> rx.Component:
                     direction="column",
                     spacing="3",
                 ),
-                on_submit=lambda c: State.handle_submit_edit_location,
+                on_submit=lambda c: LocationState.handle_submit_edit_location,
             ),
         ),
-        on_open_change=State.set_active_location_id(location.id),
+        on_open_change=LocationState.set_active_location_id(location.id),
     )
 
 
@@ -163,13 +165,13 @@ def add_location_dialog() -> rx.Component:
                             placeholder="Latitude",
                             name="lat",
                             type="text",
-                            value=State.selected_lat,
+                            value=LocationState.selected_lat,
                         ),
                         rx.input(
                             placeholder="Longitude",
                             name="lon",
                             type="text",
-                            value=State.selected_lon,
+                            value=LocationState.selected_lon,
                         ),
                         rx.input(
                             placeholder="Address",
@@ -199,7 +201,7 @@ def add_location_dialog() -> rx.Component:
                                 "Cancel",
                                 variant="soft",
                                 color_scheme="gray",
-                                on_click=State.set_add_location_dialog_open(False),
+                                on_click=LocationState.set_add_location_dialog_open(False),
                             ),
                         ),
                         direction="row",
@@ -209,17 +211,17 @@ def add_location_dialog() -> rx.Component:
                     direction="column",
                     spacing="3",
                 ),
-                on_submit=State.handle_submit_add_location,
+                on_submit=LocationState.handle_submit_add_location,
             ),
         ),
-        open=State.add_location_dialog_open,
+        open=LocationState.add_location_dialog_open,
     )
 
 
 def default_marker_map() -> rx.Component:
     return rx_map.map(
         rx.foreach(
-            State.region_data.locations,
+            LocationState.region_data.locations,
             lambda location: rx_map.marker(
                 latitude=location.lat,
                 longitude=location.lon,
@@ -246,10 +248,8 @@ def default_marker_map() -> rx.Component:
         ),
         rx_map.search_control(),
         zoom=10,
-        initialViewState=dict(
-            latitude=State.center_lat, longitude=State.center_lon, zoom=10
-        ),
-        on_click=State.handle_map_click,
+        initialViewState={"latitude": LocationState.center_lat, "longitude": LocationState.center_lon, "zoom": 10},
+        on_click=LocationState.handle_map_click,
     )
     # return rx_map.map(
     #     rx_map.source(

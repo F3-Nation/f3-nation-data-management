@@ -1,8 +1,10 @@
 import reflex as rx
-from f3_region_home.state.home import State
 from reflex_calendar import calendar as rx_calendar
-from ..layouts import default_layout
+
+# from ..components.calendar import calendar as full_calendar
 from ..database.models import Event
+from ..layouts import default_layout
+from ..state.calendar import CalendarState
 
 
 def event_card(event: Event) -> rx.Component:
@@ -25,11 +27,15 @@ def calendar() -> rx.Component:
         rx.flex(
             rx.vstack(
                 rx_calendar(
-                    value=State.selected_date_set,
-                    on_change=State.switch_selected_date(),
+                    value=CalendarState.selected_date_set,
+                    on_change=CalendarState.switch_selected_date(),
                 ),
-                rx.text(f"Selected Date: {State.selected_date_str}"),
-                rx.foreach(State.calendar_events, lambda event: event_card(event)),
+                # full_calendar(
+                #     events=CalendarState.events,
+                # ),
+                rx.text(f"Selected Date: {CalendarState.selected_date_str}"),
+                rx.foreach(CalendarState.calendar_events, lambda event: event_card(event)),
+                spacing="3",
             ),
         ),
         calendar.__name__,

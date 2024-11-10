@@ -36,6 +36,7 @@ reflex-map = "^0.2.3"
 psycopg2-binary = "^2.9.10"
 watchdog = "^5.0.3"
 watchfiles = "^0.24.0"
+reflex-magic-link-auth = "^0.0.4"
 
 
 [build-system]

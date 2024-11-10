@@ -13,7 +13,10 @@ def default_layout(page: rx.Component, tab_name: str) -> rx.Component:
             justify="center",
             min_height="85vh",
             align="center",
-            # width="100%",
+            width="100%",
         ),
+        # rx.box(
+        #     page,
+        # ),
         rx.logo(),
     )
