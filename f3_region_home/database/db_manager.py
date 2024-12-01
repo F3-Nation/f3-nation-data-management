@@ -5,6 +5,10 @@ import reflex as rx
 from sqlalchemy import select
 
 
+def get_engine():
+    return rx.session().get_bind()
+
+
 class DbManager:
     def get(cls: T, id: int) -> T:
         with rx.session() as session:

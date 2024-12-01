@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 import reflex as rx
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
 from .models import Event, EventTag, EventType, EventType_x_Org, Location, Org, Role, Role_x_User_x_Org, User
 from ..constants import DAYS_OF_WEEK
@@ -112,3 +112,32 @@ def get_user_roles(user_id: int, region_id: int) -> list[str]:
             .where(Role_x_User_x_Org.user_id == user_id, Role_x_User_x_Org.org_id == region_id)
         )
         return [row[0].name for row in session.exec(query).all()]
+
+
+def user_search(search_str: str, region: Org = None, limit: int = None) -> list[User]:
+    with rx.session() as session:
+        query = select(User).where(
+            or_(
+                User.f3_name.contains(search_str),
+                User.email.contains(search_str),
+                User.home_region_id == region.id if region else True,
+            )
+        )
+
+        users = [row[0] for row in session.exec(query).all()]
+        scored_users = []
+
+        for user in users:
+            score = 0
+            if search_str in user.f3_name:
+                score += 4
+            if region and user.home_region_id == region.id:
+                score += 3
+            if search_str in user.email:
+                score += 2
+            scored_users.append((user, score))
+
+        scored_users.sort(key=lambda x: x[1], reverse=True)
+        top_users = [user for user, score in scored_users[:limit]]
+
+    return top_users

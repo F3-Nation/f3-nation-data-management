@@ -24,6 +24,7 @@ class BaseState(MagicLinkAuthState):
     login_error: str = ""
     magic_link: Optional[str] = None
     awaiting_otp: bool = False
+    null_str_var: Optional[str] = None
 
     # def logout(self):
     #     """Log out a user."""

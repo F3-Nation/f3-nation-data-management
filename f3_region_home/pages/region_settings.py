@@ -1,7 +1,9 @@
 import reflex as rx
 
+from f3_region_home.database.models import User
+
 from ..layouts import default_layout
-from ..state.base import BaseState
+from ..state.settings import SettingsState
 
 # def settings() -> rx.Component:
 #     # Locations Page
@@ -67,20 +69,38 @@ def create_delete_icon():
     )
 
 
-def create_list_item(item_text):
+def create_list_item(user: User):
     """Create a list item with hover effects and styling."""
-    return rx.el.li(
-        item_text,
-        # class_name="dark:hover:bg-gray-600",
-        cursor="pointer",
-        transition_duration="300ms",
-        # _hover={"background-color": "#F3F4F6"},
-        padding_left="1rem",
-        padding_right="1rem",
-        padding_top="0.75rem",
-        padding_bottom="0.75rem",
-        transition_property="color, background-color, border-color, text-decoration-color, fill, stroke",
-        transition_timing_function="cubic-bezier(0.4, 0, 0.2, 1)",
+    return rx.alert_dialog.root(
+        rx.alert_dialog.trigger(
+            rx.list_item(
+                f"{user.f3_name} ({user.email})",
+                # class_name="dark:hover:bg-gray-600",
+                cursor="pointer",
+                transition_duration="300ms",
+                # _hover={"background-color": "#F3F4F6"},
+                padding_left="1rem",
+                padding_right="1rem",
+                padding_top="0.75rem",
+                padding_bottom="0.75rem",
+                transition_property="color, background-color, border-color, text-decoration-color, fill, stroke",
+                transition_timing_function="cubic-bezier(0.4, 0, 0.2, 1)",
+            )
+        ),
+        rx.alert_dialog.content(
+            rx.alert_dialog.title("Add Admin User"),
+            rx.alert_dialog.description(f"Are you sure you want to grant admin privileges to {user.f3_name}?"),
+            rx.flex(
+                rx.alert_dialog.cancel(rx.button("Cancel", variant="soft", color_scheme="gray")),
+                rx.alert_dialog.action(
+                    rx.button(
+                        "Grant", on_click=SettingsState.add_admin_user(user), variant="solid", color_scheme="green"
+                    )
+                ),
+                spacing="3",
+                justify="end",
+            ),
+        ),
     )
 
 
@@ -145,35 +165,49 @@ def create_user_info_flex(avatar_alt, avatar_src, name, email):
     )
 
 
-def create_delete_button():
-    """Create a delete button with hover effects."""
-    return rx.el.button(
-        create_delete_icon(),
-        # class_name="dark:hover:bg-gray-700",
-        transition_duration="300ms",
-        # _hover={"background-color": "#E5E7EB"},
-        padding="0.5rem",
-        border_radius="9999px",
-        transition_property="color, background-color, border-color, text-decoration-color, fill, stroke",
-        transition_timing_function="cubic-bezier(0.4, 0, 0.2, 1)",
-    )
-
-
-def create_user_list_item(avatar_alt, avatar_src, name, email):
+def create_user_list_item(user: User):
     """Create a list item for a user with avatar, info, and delete button."""
     return rx.el.li(
         create_user_info_flex(
-            avatar_alt=avatar_alt,
-            avatar_src=avatar_src,
-            name=name,
-            email=email,
+            avatar_alt=f"{user.f3_name} avatar",
+            avatar_src=user.avatar_url,
+            name=user.f3_name,
+            email=user.email,
         ),
-        create_delete_button(),
+        # create_delete_button(),
+        # rx.button(rx.icon("trash-2"), on_click=SettingsState.set_delete_admin_user(user)),
+        delete_admin_user_dialog(user),
         display="flex",
         align_items="center",
         justify_content="space-between",
         padding_top="1.5rem",
         padding_bottom="1.5rem",
+    )
+
+
+def delete_admin_user_dialog(user: User):
+    """Create a dialog for deleting an admin user."""
+    return rx.alert_dialog.root(
+        rx.alert_dialog.trigger(
+            rx.icon(
+                "trash-2",
+                _hover={"background-color": "#E8E8E8"},
+            )
+        ),
+        rx.alert_dialog.content(
+            rx.alert_dialog.title("Remove Admin User"),
+            rx.alert_dialog.description(f"Are you sure you want to revoke admin privileges from {user.f3_name}?"),
+            rx.flex(
+                rx.alert_dialog.cancel(rx.button("Cancel", variant="soft", color_scheme="gray")),
+                rx.alert_dialog.action(
+                    rx.button(
+                        "Remove", on_click=SettingsState.delete_admin_user(user), variant="solid", color_scheme="red"
+                    )
+                ),
+                spacing="3",
+                justify="end",
+            ),
+        ),
     )
 
 
@@ -197,7 +231,7 @@ def create_search_input():
         border_radius="0.5rem",
         box_shadow="0 1px 2px 0 rgba(0, 0, 0, 0.05)",
         width="100%",
-        on_change=rx.set_value("existing-user-search"),
+        on_change=SettingsState.search_users,
     )
 
 
@@ -226,11 +260,7 @@ def create_search_icon():
 def create_user_list():
     """Create a list of users with specified styling."""
     return rx.list(
-        create_list_item(item_text="John Smith (john.smith@example.com)"),
-        create_list_item(item_text="Emma Johnson (emma.johnson@example.com)"),
-        create_list_item(item_text="Michael Brown (michael.brown@example.com)"),
-        create_list_item(item_text="Sarah Davis (sarah.davis@example.com)"),
-        create_list_item(item_text="David Wilson (david.wilson@example.com)"),
+        rx.foreach(SettingsState.top_search_users, lambda user: create_list_item(user)),
         # class_name="dark:bg-gray-700 dark:border-gray-600 max-h-60",
         # background_color="#ffffff",
         border_width="1px",
@@ -298,7 +328,7 @@ def create_user_form():
     """Create a form for adding new admin users."""
     return rx.form(
         rx.box(
-            create_form_label(label_text="Search Existing User"),
+            create_form_label(label_text="Search Existing Users"),
             rx.box(
                 create_search_input(),
                 create_search_icon(),
@@ -336,24 +366,25 @@ def create_current_admins_section():
     return rx.box(
         create_section_heading(text="Current Admin Users"),
         rx.list(
-            create_user_list_item(
-                avatar_alt="John Doe avatar",
-                avatar_src="https://replicate.delivery/xezq/G3KrJPw9aOZbJ5OXkd2NCXyamiPAZDYzffX7Z5VkAOS8R7uTA/out-0.webp",
-                name="John Doe",
-                email="john.doe@example.com",
-            ),
-            create_user_list_item(
-                avatar_alt="Jane Smith avatar",
-                avatar_src="https://replicate.delivery/xezq/PxZTlrjnWWLPJBW1a7Oxrr4w82cbdbzXdfaTOeIlf8W5j2dnA/out-0.webp",
-                name="Jane Smith",
-                email="jane.smith@example.com",
-            ),
-            create_user_list_item(
-                avatar_alt="Robert Johnson avatar",
-                avatar_src="https://replicate.delivery/xezq/s3VlIgh9ggqgGlUTFCQC197wL5Q1dYKTC54Tjz0R7zPfod3JA/out-0.webp",
-                name="Robert Johnson",
-                email="robert.johnson@example.com",
-            ),
+            rx.foreach(SettingsState.region_data.admin_users, lambda user: create_user_list_item(user)),
+            # create_user_list_item(
+            #     avatar_alt="John Doe avatar",
+            #     avatar_src="https://replicate.delivery/xezq/G3KrJPw9aOZbJ5OXkd2NCXyamiPAZDYzffX7Z5VkAOS8R7uTA/out-0.webp",
+            #     name="John Doe",
+            #     email="john.doe@example.com",
+            # ),
+            # create_user_list_item(
+            #     avatar_alt="Jane Smith avatar",
+            #     avatar_src="https://replicate.delivery/xezq/PxZTlrjnWWLPJBW1a7Oxrr4w82cbdbzXdfaTOeIlf8W5j2dnA/out-0.webp",
+            #     name="Jane Smith",
+            #     email="jane.smith@example.com",
+            # ),
+            # create_user_list_item(
+            #     avatar_alt="Robert Johnson avatar",
+            #     avatar_src="https://replicate.delivery/xezq/s3VlIgh9ggqgGlUTFCQC197wL5Q1dYKTC54Tjz0R7zPfod3JA/out-0.webp",
+            #     name="Robert Johnson",
+            #     email="robert.johnson@example.com",
+            # ),
             # class_name="dark:divide-gray-700",
             # border_color="#E5E7EB",
             border_top_width="1px",

@@ -14,7 +14,11 @@ from sqlalchemy import (
 
 # from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declared_attr
-from sqlmodel import Field
+from sqlalchemy.orm import DeclarativeBase, declarative_base
+from sqlmodel import Field, SQLModel
+
+Base = declarative_base()
+SQLModel.metadata = Base.metadata
 
 
 class TimestampMixin:
@@ -64,7 +68,7 @@ class GetDBClass:
         return self
 
 
-class SlackSpace(TimestampMixin, GetDBClass, rx.Model, table=True):
+class SlackSpace(Base, TimestampMixin, GetDBClass, rx.Model, table=True):
     __tablename__ = "slack_spaces"
 
     team_id: str = Field(primary_key=True)
@@ -72,18 +76,18 @@ class SlackSpace(TimestampMixin, GetDBClass, rx.Model, table=True):
     bot_token: str | None = None
     settings: dict[str, Any] | None = Field(default=None, sa_column=Column(JSON))
 
-    def get_id():
-        return SlackSpace.team_id
+    def get_id(self):
+        return self.team_id
 
 
-class Org_x_Slack(TimestampMixin, GetDBClass, rx.Model, table=True):
+class Org_x_Slack(Base, TimestampMixin, GetDBClass, rx.Model, table=True):
     __tablename__ = "orgs_x_slack"
 
     org_id: int = Field(foreign_key="orgs.id")
     slack_id: str
 
 
-class Event(TimestampMixin, GetDBClass, rx.Model, table=True):
+class Event(Base, TimestampMixin, GetDBClass, rx.Model, table=True):
     __tablename__ = "events"
 
     org_id: int | None = Field(default=None, foreign_key="orgs.id")
@@ -130,7 +134,7 @@ class Event(TimestampMixin, GetDBClass, rx.Model, table=True):
         return events
 
 
-class EventType(TimestampMixin, GetDBClass, rx.Model, table=True):
+class EventType(Base, TimestampMixin, GetDBClass, rx.Model, table=True):
     __tablename__ = "event_types"
 
     name: str
@@ -139,14 +143,14 @@ class EventType(TimestampMixin, GetDBClass, rx.Model, table=True):
     acronym: str | None = None
 
 
-class EventCategory(TimestampMixin, GetDBClass, rx.Model, table=True):
+class EventCategory(Base, TimestampMixin, GetDBClass, rx.Model, table=True):
     __tablename__ = "event_categories"
 
     name: str
     description: str | None = Field(default=None, max_length=10000)
 
 
-class Location(TimestampMixin, GetDBClass, rx.Model, table=True):
+class Location(Base, TimestampMixin, GetDBClass, rx.Model, table=True):
     __tablename__ = "locations"
 
     org_id: Optional[int] = Field(default=None, foreign_key="orgs.id")
@@ -188,7 +192,7 @@ class Location(TimestampMixin, GetDBClass, rx.Model, table=True):
         return location
 
 
-class User(TimestampMixin, GetDBClass, rx.Model, table=True):
+class User(Base, TimestampMixin, GetDBClass, rx.Model, table=True):
     __tablename__ = "users"
 
     f3_name: str
@@ -199,7 +203,7 @@ class User(TimestampMixin, GetDBClass, rx.Model, table=True):
     meta: dict[str, Any] | None = Field(default=None, sa_column=Column(JSON))
 
 
-class SlackUser(TimestampMixin, GetDBClass, rx.Model, table=True):
+class SlackUser(Base, TimestampMixin, GetDBClass, rx.Model, table=True):
     __tablename__ = "slack_users"
     slack_id: str
     user_name: str
@@ -218,7 +222,7 @@ class SlackUser(TimestampMixin, GetDBClass, rx.Model, table=True):
     slack_updated: datetime | None = None
 
 
-class Attendance(TimestampMixin, GetDBClass, rx.Model, table=True):
+class Attendance(Base, TimestampMixin, GetDBClass, rx.Model, table=True):
     __tablename__ = "attendance"
     event_id: int = Field(foreign_key="events.id")
     user_id: int | None = Field(default=None, foreign_key="users.id")
@@ -229,14 +233,14 @@ class Attendance(TimestampMixin, GetDBClass, rx.Model, table=True):
     __table_args__ = (UniqueConstraint("event_id", "user_id", "attendance_type_id", "is_planned", name="event_user"),)
 
 
-class AttendanceType(TimestampMixin, GetDBClass, rx.Model, table=True):
+class AttendanceType(Base, TimestampMixin, GetDBClass, rx.Model, table=True):
     __tablename__ = "attendance_types"
 
     type: str
     description: str | None = Field(default=None, max_length=10000)
 
 
-class Org(TimestampMixin, GetDBClass, rx.Model, table=True):
+class Org(Base, TimestampMixin, GetDBClass, rx.Model, table=True):
     __tablename__ = "orgs"
 
     parent_id: int | None = Field(default=None, foreign_key="orgs.id")
@@ -288,13 +292,13 @@ class Org(TimestampMixin, GetDBClass, rx.Model, table=True):
         return org
 
 
-class OrgType(TimestampMixin, GetDBClass, rx.Model, table=True):
+class OrgType(Base, TimestampMixin, GetDBClass, rx.Model, table=True):
     __tablename__ = "org_types"
 
     name: str
 
 
-class EventType_x_Org(TimestampMixin, GetDBClass, rx.Model, table=True):
+class EventType_x_Org(Base, TimestampMixin, GetDBClass, rx.Model, table=True):
     __tablename__ = "event_types_x_org"
 
     event_type_id: int = Field(foreign_key="event_types.id")
@@ -302,7 +306,7 @@ class EventType_x_Org(TimestampMixin, GetDBClass, rx.Model, table=True):
     is_default: bool
 
 
-class EventTag(TimestampMixin, GetDBClass, rx.Model, table=True):
+class EventTag(Base, TimestampMixin, GetDBClass, rx.Model, table=True):
     __tablename__ = "event_tags"
 
     name: str
@@ -310,7 +314,7 @@ class EventTag(TimestampMixin, GetDBClass, rx.Model, table=True):
     color: str | None = None
 
 
-class EventTag_x_Org(TimestampMixin, GetDBClass, rx.Model, table=True):
+class EventTag_x_Org(Base, TimestampMixin, GetDBClass, rx.Model, table=True):
     __tablename__ = "event_tags_x_org"
 
     event_tag_id: int = Field(foreign_key="event_tags.id")
@@ -318,28 +322,28 @@ class EventTag_x_Org(TimestampMixin, GetDBClass, rx.Model, table=True):
     color_override: str | None = None
 
 
-class Role(TimestampMixin, GetDBClass, rx.Model, table=True):
+class Role(Base, TimestampMixin, GetDBClass, rx.Model, table=True):
     __tablename__ = "roles"
 
     name: str
     description: str | None = Field(default=None, max_length=10000)
 
 
-class Permission(TimestampMixin, GetDBClass, rx.Model, table=True):
+class Permission(Base, TimestampMixin, GetDBClass, rx.Model, table=True):
     __tablename__ = "permissions"
 
     name: str
     description: str | None = Field(default=None, max_length=10000)
 
 
-class Role_x_Permission(TimestampMixin, GetDBClass, rx.Model, table=True):
+class Role_x_Permission(Base, TimestampMixin, GetDBClass, rx.Model, table=True):
     __tablename__ = "roles_x_permissions"
 
     role_id: int = Field(foreign_key="roles.id")
     permission_id: int = Field(foreign_key="permissions.id")
 
 
-class Role_x_User_x_Org(TimestampMixin, GetDBClass, rx.Model, table=True):
+class Role_x_User_x_Org(Base, TimestampMixin, GetDBClass, rx.Model, table=True):
     __tablename__ = "roles_x_users_x_orgs"
     __table_args__ = (UniqueConstraint("role_id", "user_id", "org_id", name="_role_user_org_uc"),)
 
@@ -348,7 +352,7 @@ class Role_x_User_x_Org(TimestampMixin, GetDBClass, rx.Model, table=True):
     org_id: int = Field(foreign_key="orgs.id")
 
 
-class Achievement(TimestampMixin, GetDBClass, rx.Model, table=True):
+class Achievement(Base, TimestampMixin, GetDBClass, rx.Model, table=True):
     __tablename__ = "achievements"
 
     name: str
@@ -357,7 +361,7 @@ class Achievement(TimestampMixin, GetDBClass, rx.Model, table=True):
     image_url: str | None = None
 
 
-class Achievement_x_User(TimestampMixin, GetDBClass, rx.Model, table=True):
+class Achievement_x_User(Base, TimestampMixin, GetDBClass, rx.Model, table=True):
     __tablename__ = "achievements_x_users"
 
     achievement_id: int = Field(foreign_key="achievements.id")
@@ -365,7 +369,7 @@ class Achievement_x_User(TimestampMixin, GetDBClass, rx.Model, table=True):
     date_awarded: date
 
 
-class Achievement_x_Org(TimestampMixin, GetDBClass, rx.Model, table=True):
+class Achievement_x_Org(Base, TimestampMixin, GetDBClass, rx.Model, table=True):
     __tablename__ = "achievements_x_orgs"
 
     achievement_id: int = Field(foreign_key="achievements.id")

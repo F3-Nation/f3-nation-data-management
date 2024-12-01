@@ -37,6 +37,8 @@ psycopg2-binary = "^2.9.10"
 watchdog = "^5.0.3"
 watchfiles = "^0.24.0"
 reflex-magic-link-auth = "^0.0.4"
+sqlalchemy-schemadisplay = "^2.0"
+graphviz = "^0.20.3"
 
 
 [build-system]

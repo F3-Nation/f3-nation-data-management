@@ -32,6 +32,7 @@ def aos() -> rx.Component:
             add_series_dialog(),
             edit_series_dialog(),
             delete_series_dialog(),
+            # schedule_grid(),
             direction="column",
             spacing="3",
             align="center",
@@ -440,4 +441,16 @@ def ao_form() -> rx.Component:
             spacing="3",
         ),
         on_submit=ScheduleState.handle_submit_ao_form,
+    )
+
+
+def schedule_grid() -> rx.Component:
+    return rx.grid(
+        rx.foreach(
+            rx.Var.range(14),
+            lambda i: rx.card(f"Card {i + 1}", height="10vh"),
+        ),
+        columns="7",
+        spacing="1",
+        width="100%",
     )
